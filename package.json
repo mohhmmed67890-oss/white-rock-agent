@@ -1,0 +1,11 @@
+{
+  "name": "white-rock-agent",
+  "version": "1.0.0",
+  "main": "generate-content.js",
+  "scripts": {
+    "start": "node generate-content.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
