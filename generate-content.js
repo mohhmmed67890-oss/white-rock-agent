@@ -1,49 +1,54 @@
-const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY;
+const http = require("http");
+const url = require("url");
 
-async function generateCaption({ clientName, toneProfile, topic, platform }) {
-  const prompt = `
-أنت مساعد كتابة محتوى سوشل ميديا لعميل اسمه "${clientName}".
-نبرة الصوت المطلوبة: ${toneProfile}
-المنصة المستهدفة: ${platform}
-الموضوع المطلوب كتابة منشور عنه: ${topic}
+const INSTAGRAM_APP_ID = process.env.INSTAGRAM_APP_ID || "1009397085016079";
+const INSTAGRAM_APP_SECRET = process.env.INSTAGRAM_APP_SECRET;
+const REDIRECT_URI = process.env.REDIRECT_URI || "https://white-rock-agent.onrender.com";
 
-اكتب كابشن جذاب ومناسب للمنصة، باللغة العربية، مع إضافة 3-5 هاشتاقات مناسبة في النهاية.
-أعطني فقط نص الكابشن، بدون أي مقدمات أو شرح إضافي.
-`;
+const server = http.createServer(async (req, res) => {
+  const parsed = url.parse(req.url, true);
+  const code = parsed.query.code;
 
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": CLAUDE_API_KEY,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-6",
-      max_tokens: 500,
-      messages: [{ role: "user", content: prompt }],
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`فشل الاتصال بـ Claude API: ${errorText}`);
+  if (!code) {
+    res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
+    res.end("وكيل White Rock شغّال ✅");
+    return;
   }
 
-  const data = await response.json();
-  const textBlock = data.content.find((block) => block.type === "text");
-  return textBlock ? textBlock.text.trim() : null;
-}
+  try {
+    const cleanCode = code.split("#")[0];
 
-const http = require("http");
-const server = http.createServer(async (req, res) => {
-  res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
-  res.end("وكيل White Rock شغّال ✅");
+    const params = new URLSearchParams();
+    params.append("client_id", INSTAGRAM_APP_ID);
+    params.append("client_secret", INSTAGRAM_APP_SECRET);
+    params.append("grant_type", "authorization_code");
+    params.append("redirect_uri", REDIRECT_URI);
+    params.append("code", cleanCode);
+
+    const tokenResponse = await fetch("https://api.instagram.com/oauth/access_token", {
+      method: "POST",
+      body: params,
+    });
+
+    const tokenData = await tokenResponse.json();
+
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+    res.end(`
+      <html dir="rtl" lang="ar">
+      <body style="font-family: sans-serif; padding: 40px; background: #f5f5f5;">
+        <h2>نتيجة تبديل الرمز بتوكن</h2>
+        <pre style="background:#fff; padding:20px; border-radius:8px; direction:ltr; text-align:left; overflow-wrap:break-word; white-space:pre-wrap;">${JSON.stringify(tokenData, null, 2)}</pre>
+        <p>انسخ قيمة access_token اللي فوق واحفظها بمكان آمن. لا ترسلها لأي أحد.</p>
+      </body>
+      </html>
+    `);
+  } catch (error) {
+    res.writeHead(500, { "Content-Type": "text/plain; charset=utf-8" });
+    res.end("حدث خطأ: " + error.message);
+  }
 });
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`السيرفر شغّال على المنفذ ${PORT}`);
 });
-
-module.exports = { generateCaption };
