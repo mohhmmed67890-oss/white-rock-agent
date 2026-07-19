@@ -9,6 +9,12 @@ const server = http.createServer(async (req, res) => {
   const parsed = url.parse(req.url, true);
   const code = parsed.query.code;
 
+  if (parsed.pathname === "/debug") {
+    res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
+    res.end("REDIRECT_URI الحالي: [" + REDIRECT_URI + "]");
+    return;
+  }
+
   if (!code) {
     res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
     res.end("وكيل White Rock شغّال ✅");
@@ -38,7 +44,7 @@ const server = http.createServer(async (req, res) => {
       <body style="font-family: sans-serif; padding: 40px; background: #f5f5f5;">
         <h2>نتيجة تبديل الرمز بتوكن</h2>
         <pre style="background:#fff; padding:20px; border-radius:8px; direction:ltr; text-align:left; overflow-wrap:break-word; white-space:pre-wrap;">${JSON.stringify(tokenData, null, 2)}</pre>
-        <p>انسخ قيمة access_token اللي فوق واحفظها بمكان آمن. لا ترسلها لأي أحد.</p>
+        <p>REDIRECT_URI المستخدم: ${REDIRECT_URI}</p>
       </body>
       </html>
     `);
