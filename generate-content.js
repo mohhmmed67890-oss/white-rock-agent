@@ -3,7 +3,7 @@ const url = require("url");
 
 const INSTAGRAM_APP_ID = process.env.INSTAGRAM_APP_ID || "1009397085016079";
 const INSTAGRAM_APP_SECRET = process.env.INSTAGRAM_APP_SECRET;
-const REDIRECT_URI = process.env.REDIRECT_URI || "https://white-rock-agent.onrender.com";
+const REDIRECT_URI = process.env.REDIRECT_URI || "https://white-rock-agent.onrender.com/";
 
 const server = http.createServer(async (req, res) => {
   const parsed = url.parse(req.url, true);
@@ -18,16 +18,16 @@ const server = http.createServer(async (req, res) => {
   try {
     const cleanCode = code.split("#")[0];
 
-    const params = new URLSearchParams();
-    params.append("client_id", INSTAGRAM_APP_ID);
-    params.append("client_secret", INSTAGRAM_APP_SECRET);
-    params.append("grant_type", "authorization_code");
-    params.append("redirect_uri", REDIRECT_URI);
-    params.append("code", cleanCode);
+    const form = new FormData();
+    form.append("client_id", INSTAGRAM_APP_ID);
+    form.append("client_secret", INSTAGRAM_APP_SECRET);
+    form.append("grant_type", "authorization_code");
+    form.append("redirect_uri", REDIRECT_URI);
+    form.append("code", cleanCode);
 
     const tokenResponse = await fetch("https://api.instagram.com/oauth/access_token", {
       method: "POST",
-      body: params,
+      body: form,
     });
 
     const tokenData = await tokenResponse.json();
