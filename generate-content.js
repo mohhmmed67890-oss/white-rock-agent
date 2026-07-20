@@ -1,8 +1,46 @@
 const http = require("http");
 const url = require("url");
 
+const INSTAGRAM_APP_ID = process.env.INSTAGRAM_APP_ID || "1009397085016079";
+const INSTAGRAM_APP_SECRET = process.env.INSTAGRAM_APP_SECRET;
+const REDIRECT_URI = process.env.REDIRECT_URI || "https://white-rock-agent.onrender.com/";
+
 const server = http.createServer(async (req, res) => {
   const parsed = url.parse(req.url, true);
+  const code = parsed.query.code;
+
+  // استقبال كود انستغرام وتحويله لتوكن
+  if (code) {
+    try {
+      const cleanCode = code.split("#")[0];
+      const form = new FormData();
+      form.append("client_id", INSTAGRAM_APP_ID);
+      form.append("client_secret", INSTAGRAM_APP_SECRET);
+      form.append("grant_type", "authorization_code");
+      form.append("redirect_uri", REDIRECT_URI);
+      form.append("code", cleanCode);
+
+      const tokenResponse = await fetch("https://api.instagram.com/oauth/access_token", {
+        method: "POST",
+        body: form,
+      });
+      const tokenData = await tokenResponse.json();
+
+      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+      res.end(`
+        <html dir="rtl" lang="ar">
+        <body style="font-family: sans-serif; padding: 40px;">
+          <h2>نتيجة تبديل الرمز بتوكن</h2>
+          <pre style="background:#fff; padding:20px; border-radius:8px; direction:ltr; text-align:left; white-space:pre-wrap; word-break:break-all;">${JSON.stringify(tokenData, null, 2)}</pre>
+        </body>
+        </html>
+      `);
+    } catch (error) {
+      res.writeHead(500, { "Content-Type": "text/plain; charset=utf-8" });
+      res.end("خطأ: " + error.message);
+    }
+    return;
+  }
 
   // صفحة النشر التجريبي
   if (parsed.pathname === "/publish") {
@@ -18,7 +56,6 @@ const server = http.createServer(async (req, res) => {
     }
 
     try {
-      // الخطوة 1: إنشاء حاوية المحتوى
       const createParams = new URLSearchParams();
       createParams.append("image_url", imageUrl);
       createParams.append("caption", caption);
@@ -32,11 +69,10 @@ const server = http.createServer(async (req, res) => {
 
       if (!createData.id) {
         res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-        res.end(`<pre dir="ltr">فشل إنشاء الحاوية:\n${JSON.stringify(createData, null, 2)}</pre>`);
+        res.end(`<pre dir="ltr" style="white-space:pre-wrap;">فشل إنشاء الحاوية:\n${JSON.stringify(createData, null, 2)}</pre>`);
         return;
       }
 
-      // الخطوة 2: نشر الحاوية
       const publishParams = new URLSearchParams();
       publishParams.append("creation_id", createData.id);
       publishParams.append("access_token", token);
