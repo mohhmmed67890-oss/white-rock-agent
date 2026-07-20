@@ -73,6 +73,17 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
+      // ننتظر لين تصير الحاوية جاهزة
+      let statusCheck;
+      for (let i = 0; i < 10; i++) {
+        await new Promise((r) => setTimeout(r, 3000));
+        const checkRes = await fetch(
+          `https://graph.instagram.com/v21.0/${createData.id}?fields=status_code&access_token=${token}`
+        );
+        statusCheck = await checkRes.json();
+        if (statusCheck.status_code === "FINISHED") break;
+      }
+
       const publishParams = new URLSearchParams();
       publishParams.append("creation_id", createData.id);
       publishParams.append("access_token", token);
@@ -84,7 +95,7 @@ const server = http.createServer(async (req, res) => {
       const publishData = await publishRes.json();
 
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-      res.end(`<pre dir="ltr" style="white-space:pre-wrap;">نتيجة النشر:\n${JSON.stringify(publishData, null, 2)}</pre>`);
+      res.end(`<pre dir="ltr" style="white-space:pre-wrap;">حالة الحاوية: ${JSON.stringify(statusCheck)}\nنتيجة النشر:\n${JSON.stringify(publishData, null, 2)}</pre>`);
     } catch (error) {
       res.writeHead(500, { "Content-Type": "text/plain; charset=utf-8" });
       res.end("خطأ: " + error.message);
