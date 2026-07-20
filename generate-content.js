@@ -42,7 +42,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // صفحة النشر التجريبي
+  // صفحة النشر التجريبي على انستغرام
   if (parsed.pathname === "/publish") {
     const token = parsed.query.token;
     const igUserId = "38235807102676744";
@@ -73,7 +73,6 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
-      // ننتظر لين تصير الحاوية جاهزة
       let statusCheck;
       for (let i = 0; i < 10; i++) {
         await new Promise((r) => setTimeout(r, 3000));
@@ -96,6 +95,42 @@ const server = http.createServer(async (req, res) => {
 
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
       res.end(`<pre dir="ltr" style="white-space:pre-wrap;">حالة الحاوية: ${JSON.stringify(statusCheck)}\nنتيجة النشر:\n${JSON.stringify(publishData, null, 2)}</pre>`);
+    } catch (error) {
+      res.writeHead(500, { "Content-Type": "text/plain; charset=utf-8" });
+      res.end("خطأ: " + error.message);
+    }
+    return;
+  }
+
+  // إرسال رسالة واتساب تجريبية
+  if (parsed.pathname === "/send-whatsapp") {
+    const TWILIO_SID = process.env.TWILIO_ACCOUNT_SID;
+    const TWILIO_TOKEN = process.env.TWILIO_AUTH_TOKEN;
+    const MY_NUMBER = process.env.MY_WHATSAPP_NUMBER;
+
+    try {
+      const body = new URLSearchParams();
+      body.append("From", "whatsapp:+14155238886");
+      body.append("To", MY_NUMBER);
+      body.append("Body", "عميل: نسبه\nمنصة: انستغرام\nكابشن: خدماتنا الآن بين إيديك 🎯\nموعد النشر المقترح: اليوم\n\nرد بـ موافق أو لا");
+
+      const auth = Buffer.from(`${TWILIO_SID}:${TWILIO_TOKEN}`).toString("base64");
+
+      const twilioRes = await fetch(
+        `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Basic ${auth}`,
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: body,
+        }
+      );
+      const twilioData = await twilioRes.json();
+
+      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+      res.end(`<pre dir="ltr" style="white-space:pre-wrap;">${JSON.stringify(twilioData, null, 2)}</pre>`);
     } catch (error) {
       res.writeHead(500, { "Content-Type": "text/plain; charset=utf-8" });
       res.end("خطأ: " + error.message);
